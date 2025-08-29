@@ -41,6 +41,7 @@ const Login: React.FC<LoginProps> = (props) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -55,116 +56,76 @@ const Login: React.FC<LoginProps> = (props) => {
       localStorage.removeItem("rememberedPassword");
     }
 
-   
     if (!username || !password) {
       setError(t("login.errors.required"));
       setIsLoading(false);
       return;
     }
-    // Obtener coordenadas antes de hacer login
+    
+    // Función para realizar el login con las coordenadas
     const doLogin = async (coords?: { latitude: number; longitude: number }) => {
       try {
-        // Usar el servicio de autenticación para credenciales reales
+        // Usar el servicio de autenticación con los parámetros correctos
         const response = await authService.login({
-          login: username, // Enviar username como login
+          email: username, // Usar email como la API espera
           password,
           ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
         });
 
-       
+        // Verificar respuesta según la nueva estructura
+        if (!response.status && !response.success) {
+          setError(response.message || "Error de autenticación");
+          setIsLoading(false);
+          return;
+        }
 
-        // Guardar los datos del usuario si no se guardaron automáticamente
-        if (response.user && !authService.getUserData()) {
-          authService.setUserData(response.user);
+        // Verificar que tenemos datos en la respuesta
+        if (!response.data && !response.user) {
+          setError("Formato de respuesta incorrecto");
+          setIsLoading(false);
+          return;
         }
 
-        // Validar usuario, tipo y estado
-        type UserApi = typeof response.user & { estado?: string; tipo?: string };
-        const user = response.user as UserApi;
-        if (!user) {
-          setError("Usuario no encontrado en la respuesta del servidor.");
-          setIsLoading(false);
-          return;
+        // En la nueva estructura, los permisos vienen en la respuesta
+        if (response.data?.permissions && Array.isArray(response.data.permissions)) {
+          setPermissions(response.data.permissions);
         }
-        if (user.estado !== "A") {
-          setError("El usuario no está activo. Contacte al administrador.");
-          setIsLoading(false);
-          return;
-        }
-        // Normalizar tipo de usuario para manejar inconsistencias de singular/plural
-        const userType = (user.tipo || "").toUpperCase();
-        const allowedTypes = ["ADMIN", "RRHH", "EMPLEADO"];
-        
-        if (!allowedTypes.includes(userType)) {
-          setError("Solo usuarios de tipo ADMIN/RRHH/EMPLEADO pueden ingresar a este sistema.");
-          setIsLoading(false);
-          return;
-        }
-        // Obtener y guardar permisos del rol
-        let roleId: number | null = null;
-        let isAdmin = false;
-        if (user.role) {
-          if (typeof user.role === "object" && "id" in user.role) {
-            roleId = (user.role as { id: number }).id;
-            isAdmin = (user.role as { name?: string }).name === "Admin";
-          } else if (!isNaN(Number(user.role))) {
-            roleId = Number(user.role);
+
+        // Reportar login en paralelo sin bloquear la interfaz
+        Promise.resolve().then(async () => {
+          try {
+            // Intentar obtener la IP pública con un timeout corto
+            const ipPromise = fetch("https://api.ipify.org?format=json", { 
+              signal: AbortSignal.timeout(2000) 
+            })
+              .then(res => res.ok ? res.json() : { ip: "" })
+              .then(data => data.ip || "")
+              .catch(() => "");
+
+            const ip = await ipPromise;
+            
+            // Usar coordenadas recibidas o valores predeterminados
+            const latitud = coords?.latitude || 0;
+            const longitud = coords?.longitude || 0;
+            
+            // Formatear fecha/hora actual
+            const now = new Date();
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            const fecha_hora_ingreso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            
+            await authService.reportLogin({
+              email: username,
+              fecha_hora_ingreso,
+              ip,
+              latitud,
+              longitud,
+            });
+          } catch (e) {
+            console.warn("No se pudo reportar el login:", e);
           }
-        }
+        });
 
-        // Ejecutar permisos y reporte de login en paralelo para mayor velocidad
-        const promises: Promise<any>[] = [];
-        
-        // Promesa 1: Obtener permisos (solo si hay roleId y token)
-        if (response.token && roleId) {
-          promises.push(
-            authService.getRolePermissions(roleId, response.token)
-              .then(perms => setPermissions(perms))
-              .catch(e => console.warn("Error obteniendo permisos:", e))
-          );
-        }
-
-        // Promesa 2: Reportar login (de forma asíncrona)
-        promises.push(
-          (async () => {
-            try {
-              // Obtener IP pública de forma más rápida
-              const ipPromise = fetch("https://api.ipify.org?format=json", { 
-                signal: AbortSignal.timeout(2000) // 2 segundos timeout
-              })
-                .then(res => res.ok ? res.json() : { ip: "" })
-                .then(data => data.ip || "")
-                .catch(() => "");
-
-              const ip = await ipPromise;
-              
-              // Determinar lat/lon si se recibieron coords
-              let latitud = 0;
-              let longitud = 0;
-              if (coords) {
-                latitud = coords.latitude;
-                longitud = coords.longitude;
-              }
-              
-              // Formatear fecha/hora a 'YYYY-MM-DD HH:mm:ss'
-              const now = new Date();
-              const pad = (n: number) => n.toString().padStart(2, '0');
-              const fecha_hora_ingreso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-              
-              await authService.reportLogin({
-                email: username,
-                fecha_hora_ingreso,
-                ip,
-                latitud,
-                longitud,
-              });
-            } catch (e) {
-              console.warn("No se pudo reportar el login:", e);
-            }
-          })()
-        );
-
-        // Ejecutar login inmediatamente sin esperar las operaciones secundarias
+        // Ejecutar login inmediatamente
         if (typeof onLogin === "function") {
           onLogin();
         } else {
@@ -172,18 +133,14 @@ const Login: React.FC<LoginProps> = (props) => {
           setError(t("login.errors.loginFailed"));
         }
 
-        // Ejecutar promesas en paralelo sin bloquear el login
-        Promise.allSettled(promises).then(() => {
-          console.log("Operaciones post-login completadas");
-        });
       } catch (error) {
         console.error("Error de autenticación:", error);
 
         if (error instanceof ApiError) {
-          // Mostrar el mensaje de error de la API
+          // Mostrar mensaje de error de la API
           setError(error.message || t("login.errors.loginFailed"));
         } else {
-          // Errores de conexión
+          // Error de conexión
           setError(t("login.errors.serverError"));
         }
       } finally {
@@ -191,12 +148,12 @@ const Login: React.FC<LoginProps> = (props) => {
       }
     };
 
+    // Intentar obtener ubicación para el login
     if (navigator.geolocation) {
-      // Configurar timeout más corto para geolocalización
       const geoOptions = {
-        timeout: 3000, // 3 segundos máximo
-        enableHighAccuracy: false, // Más rápido pero menos preciso
-        maximumAge: 300000 // Usar ubicación de hasta 5 minutos de antigüedad
+        timeout: 3000, 
+        enableHighAccuracy: false,
+        maximumAge: 300000 
       };
       
       navigator.geolocation.getCurrentPosition(
@@ -208,12 +165,12 @@ const Login: React.FC<LoginProps> = (props) => {
         },
         (geoError) => {
           console.error("No se pudo obtener la ubicación:", geoError);
-          doLogin(); // Login sin coordenadas si el usuario no da permiso
+          doLogin(); // Login sin coordenadas
         },
         geoOptions
       );
     } else {
-      doLogin(); // Login sin coordenadas si el navegador no soporta geolocalización
+      doLogin(); // Login sin coordenadas
     }
   };
 

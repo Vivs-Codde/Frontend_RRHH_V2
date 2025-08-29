@@ -2,23 +2,57 @@ import { API_ENDPOINTS, API_BASE_URL, getAuthHeaders, API_CONFIG } from '../cons
 
 // Interfaces para el servicio de autenticación
 export interface LoginRequest {
-  login: string;  // Puede ser email o usuario
+  email: string;  // Puede ser email o usuario
   password: string;
   latitude?: number;
   longitude?: number;
 }
 
 export interface LoginResponse {
-  success: boolean;
+  status: boolean;
   message: string;
-  token?: string;
-  user?: {
-    id: number;
-    name: string;
-    email: string;
-    role?: string;
-    avatar?: string;
+  data?: {
+    user?: {
+      id: number;
+      name: string;
+      email: string;
+      email_verified_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+      roles?: Array<{
+        id: number;
+        name: string;
+        guard_name: string;
+        created_at: string;
+        updated_at: string;
+        pivot: {
+          model_type: string;
+          model_id: number;
+          role_id: number;
+        };
+        permissions?: Array<{
+          id: number;
+          name: string;
+          guard_name: string;
+          created_at: string;
+          updated_at: string;
+          pivot: {
+            role_id: number;
+            permission_id: number;
+          }
+        }>;
+      }>;
+      permissions?: any[];
+    };
+    roles?: string[];
+    permissions?: string[];
+    token?: string;
+    location?: {
+      latitude: number;
+      longitude: number;
+    };
   };
+  success?: boolean; // Para mantener compatibilidad con código existente
 }
 
 export interface RegisterRequest {
@@ -92,10 +126,9 @@ export async function getUsuariosPaginado(params: { search?: string; page?: numb
   // Si tenemos usuarios, cargar sus IPs detalladas
   if (result.data && Array.isArray(result.data) && result.data.length > 0) {
     
-    
     // Cargar IPs para cada usuario en paralelo
     const usuariosConIps = await Promise.all(
-      result.data.map(async (usuario) => {
+      result.data.map(async (usuario: any) => {
         try {
           const ipsResponse = await fetch(API_ENDPOINTS.AUTH.USER_IPS(usuario.id), {
             headers: getAuthHeaders(),
@@ -127,13 +160,18 @@ export async function getUsuariosPaginado(params: { search?: string; page?: numb
 
 // Clase de error personalizada para la API
 export class ApiError extends Error {
+  status?: number;
+  data?: any;
+  
   constructor(
     message: string,
-    public status?: number,
-    public data?: any
+    status?: number,
+    data?: any
   ) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
   }
 }
 
@@ -148,14 +186,15 @@ class AuthService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(credentials),
       });
 
       const data = await response.json();
       
-
-      if (!response.ok) {
+      // En la nueva API, debemos verificar status en lugar de response.ok
+      if (!data.status) {
         throw new ApiError(
           data.message || 'Error en el inicio de sesión',
           response.status,
@@ -163,13 +202,16 @@ class AuthService {
         );
       }
 
-      // Guardar token y datos del usuario si el login es exitoso
-      if (data.token) {
-        this.setAuthToken(data.token);
+      // Para mantener compatibilidad con el código existente
+      data.success = data.status;
+
+      // Guardar token y datos del usuario según la nueva estructura
+      if (data.data?.token) {
+        this.setAuthToken(data.data.token);
       }
       
-      if (data.user) {
-        this.setUserData(data.user);
+      if (data.data?.user) {
+        this.setUserData(data.data.user);
       }
 
       return data;
@@ -243,7 +285,10 @@ class AuthService {
       if (token) {
         await fetch(API_ENDPOINTS.AUTH.LOGOUT, {
           method: 'POST',
-          headers: getAuthHeaders(),
+          headers: {
+            ...getAuthHeaders(),
+            'Authorization': `Bearer ${token}`
+          }
         });
       }
     } catch (error) {
@@ -281,9 +326,7 @@ class AuthService {
    */
   async getUserProfile(): Promise<User> {
     try {
-      // Nota: Este endpoint aún no está definido en API_ENDPOINTS
-      // Se puede agregar cuando sea necesario
-      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+      const response = await fetch(API_ENDPOINTS.AUTH.PROFILE, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
@@ -356,105 +399,6 @@ class AuthService {
     });
     const perms = await res.json();
     return Array.isArray(perms) ? perms : [];
-  }
-
-  /**
-   * Actualizar IPs de usuarios en bulk
-   * @param data Array de objetos { idRRHH, ips }
-   */
-  async updateUsuariosIpBulk(data: { idRRHH: string; ips: string[] }[]): Promise<any> {
-    const response = await fetch(API_ENDPOINTS.AUTH.UPDATE_IP_USUARIO, {
-      method: 'PATCH',
-      headers: {
-        ...getAuthHeaders(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Error al actualizar IPs de usuarios');
-    return response.json();
-  }
-
-  /**
-   * Activar/Desactivar una IP específica
-   * @param ipId ID de la IP a cambiar de estado
-   */
-  async toggleIpStatus(ipId: number): Promise<any> {
-    const response = await fetch(`https://api-sales.eqrapp.com/api/ips/${ipId}/toggle`, {
-      method: 'PATCH',
-      headers: {
-        ...getAuthHeaders(),
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) throw new Error('Error al cambiar estado de la IP');
-    return response.json();
-  }
-
-  /**
-   * Agregar una nueva IP a un usuario
-   * @param userId ID del usuario
-   * @param ipAddress Dirección IP a agregar
-   */
-  async addUserIp(userId: number, ipAddress: string): Promise<any> {
-    const requestBody = {
-      ip_address: ipAddress,
-      descripcion: "ip externa",
-      nombreFinca: "ip externa",
-      activa: true
-    };
-    
-    const response = await fetch(API_ENDPOINTS.AUTH.ADD_USER_IP(userId), {
-      method: 'POST',
-      headers: {
-        ...getAuthHeaders(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Error ${response.status}: ${errorData.message || 'Error al agregar IP'}`);
-    }
-    
-    return response.json();
-  }
-
-  /**
-   * Obtener todas las IPs de un usuario
-   * @param userId ID del usuario
-   */
-  async getUserIps(userId: number): Promise<any[]> {
-    const response = await fetch(API_ENDPOINTS.AUTH.USER_IPS(userId), {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Error al obtener IPs del usuario');
-    }
-    
-    const ipsData = await response.json();
-    return Array.isArray(ipsData) ? ipsData : [];
-  }
-
-  /**
-   * Eliminar una IP por su ID
-   * @param ipId ID de la IP a eliminar
-   */
-  async deleteIp(ipId: number): Promise<any> {
-    const response = await fetch(API_ENDPOINTS.AUTH.DELETE_IP(ipId), {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Error ${response.status}: ${errorData.message || 'Error al eliminar IP'}`);
-    }
-    
-    return response.json();
   }
 
   // Métodos para manejar el almacenamiento local

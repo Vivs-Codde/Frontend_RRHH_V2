@@ -29,6 +29,8 @@ import { MdAssignmentInd } from "react-icons/md";
 import { CiReceipt } from "react-icons/ci";
 import { FaBoxes } from "react-icons/fa";
 import { FaMapPin } from "react-icons/fa";
+import { IoIosColorPalette } from "react-icons/io";
+import { PiFileTextFill } from "react-icons/pi";
 const Sidebar: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }) => {
   const { t } = useTranslation();
   
@@ -39,11 +41,11 @@ const Sidebar: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }) => {
       icon: <FaUser />,
       type: "clientes",
       subItems: [
-        { label: t('common.sidebar.client'), icon: <FaUser />, path: "/cliente-usuario" },
-        { label: t('common.sidebar.locations'), icon: <FaMapMarkerAlt />, path: "/cliente/locations" },
-        { label: t('common.sidebar.salesperson'), icon: <FaUserTie />, path: "/cliente/vendedor" },
-        { label: t('common.sidebar.countries'), icon: <FaGlobe />, path: "/cliente/pais" },
-        { label: t('common.sidebar.marcaciones'), icon: <FaMapPin  />, path: "/cliente/marcaciones" },
+        { label:"Empleados", icon: <FaUser />, path: "/cliente-usuario" },
+        { label: "Colores", icon: <IoIosColorPalette />, path: "/cliente/color" },
+        { label: "Departamento", icon: <FaUserTie />, path: "/cliente/vendedor" },
+        { label: "Finca", icon: <FaGlobe />, path: "/cliente/pais" },
+        { label: "Contrato", icon: <PiFileTextFill  />, path: "/cliente/marcaciones" },
       ],
     },
     {

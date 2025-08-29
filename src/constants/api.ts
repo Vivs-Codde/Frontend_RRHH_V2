@@ -27,6 +27,44 @@ export const API_ENDPOINTS = {
     DELETE_IP: (id: number | string) => `${API_BASE_URL}/api/ips/${id}`,
     PROFILE:`${API_BASE_URL}/api/user`,
   },
+  //COLORES
+  COLORES: {
+    LIST: `${API_BASE_URL}/api/colores`,
+    CREATE: `${API_BASE_URL}/api/colores`,
+    UPDATE: (id: number | string) => `${API_BASE_URL}/api/colores/${id}`,
+    DELETE: (id: number | string) => `${API_BASE_URL}/api/colores/${id}`,
+    UPDATE_STATUS: (id: number | string) => `${API_BASE_URL}/api/colores/${id}/estado`,
+  },
+  //DEPARTAMENTOS
+  DEPARTAMENTOS:{
+    LIST: `${API_BASE_URL}/api/departamentos`,
+    CREATE: `${API_BASE_URL}/api/departamentos`,
+    UPDATE: (id: number | string) => `${API_BASE_URL}/api/departamentos/${id}`,
+    DELETE: (id: number | string) => `${API_BASE_URL}/api/departamentos/${id}`,
+  },
+  //FINCAS
+  FINCAS: {
+    LIST: `${API_BASE_URL}/api/fincas`,
+    CREATE: `${API_BASE_URL}/api/fincas`,
+    UPDATE: (id: number | string) => `${API_BASE_URL}/api/fincas/${id}`,
+    DELETE: (id: number | string) => `${API_BASE_URL}/api/fincas/${id}`,
+  },
+  //TIPO DE CONTRATO
+  TIPOS_CONTRATO: {
+    LIST: `${API_BASE_URL}/api/tipos-contrato`,
+    CREATE: `${API_BASE_URL}/api/tipos-contrato`,
+    UPDATE: (id: number | string) => `${API_BASE_URL}/api/tipos-contrato/${id}`,
+    DELETE: (id: number | string) => `${API_BASE_URL}/api/tipos-contrato/${id}`,
+  },
+  //ESTRUCTURAS ORGANIZACIONELES
+  ESTRUCTURAS: {
+    LIST: `${API_BASE_URL}/api/estructuras-organizacionaes`,
+    CREATE: `${API_BASE_URL}/api/estructuras-organizacionaes`,
+    UPDATE: (id: number | string) => `${API_BASE_URL}/api/estructuras-organizacionaes/${id}`,
+    DELETE: (id: number | string) => `${API_BASE_URL}/api/estructuras-organizacionaes/${id}`,
+  },
+
+  //////////APIS DE VENTAS////////////
   //Cargeras
   CARGUERAS: {
     LIST: `${API_BASE_URL}/api/cargueras`,

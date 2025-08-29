@@ -8,7 +8,7 @@ import Usuario from './pages/Usuario'
 import ClienteForm from './components/forms/ClienteForm'
 import Carguera from './pages/clientepage/Carguera'
 import Cooler from './pages/clientepage/Cooler'
-import Locations from './pages/clientepage/Locations'
+import Color from './pages/empleadopage/Color'
 import Vendedor from './pages/clientepage/Vendedor'
 import ForgotPassword from './auth/ForgotPassword'
 import ResetPassword from './auth/ResetPassword'
@@ -77,7 +77,7 @@ function AppRoutes({ isAuthenticated, setIsAuthenticated, handleLogin }: AppRout
         <Route path="/config-cliente" element={<ProtectedRoute><Navigate to="/cliente/carguera" /></ProtectedRoute>} />
         <Route path="/cliente/carguera" element={<ProtectedRoute><Carguera /></ProtectedRoute>} />
         <Route path="/cliente/cooler" element={<ProtectedRoute><Cooler /></ProtectedRoute>} />
-        <Route path="/cliente/locations" element={<ProtectedRoute><Locations /></ProtectedRoute>} />
+        <Route path="/cliente/color" element={<ProtectedRoute><Color /></ProtectedRoute>} />
         <Route path="/cliente/vendedor" element={<ProtectedRoute><Vendedor /></ProtectedRoute>} />
         <Route path="/cliente/pais" element={<ProtectedRoute><Pais /></ProtectedRoute>} />
         <Route path="/cliente/marcaciones" element={<ProtectedRoute><MarcacionesForm /></ProtectedRoute>} />
