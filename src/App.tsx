@@ -10,6 +10,7 @@ import Carguera from './pages/clientepage/Carguera'
 import Cooler from './pages/clientepage/Cooler'
 import Color from './pages/empleadopage/Color'
 import Departamento from './pages/empleadopage/Departamento'
+import Finca from './pages/empleadopage/Finca'
 import Vendedor from './pages/clientepage/Vendedor'
 import ForgotPassword from './auth/ForgotPassword'
 import ResetPassword from './auth/ResetPassword'
@@ -80,6 +81,7 @@ function AppRoutes({ isAuthenticated, setIsAuthenticated, handleLogin }: AppRout
         <Route path="/cliente/cooler" element={<ProtectedRoute><Cooler /></ProtectedRoute>} />
         <Route path="/cliente/color" element={<ProtectedRoute><Color /></ProtectedRoute>} />
         <Route path="/cliente/departamento" element={<ProtectedRoute><Departamento /></ProtectedRoute>} />
+        <Route path="/cliente/finca" element={<ProtectedRoute><Finca /></ProtectedRoute>} />
         <Route path="/cliente/vendedor" element={<ProtectedRoute><Vendedor /></ProtectedRoute>} />
         <Route path="/cliente/pais" element={<ProtectedRoute><Pais /></ProtectedRoute>} />
         <Route path="/cliente/marcaciones" element={<ProtectedRoute><MarcacionesForm /></ProtectedRoute>} />

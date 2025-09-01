@@ -9,6 +9,7 @@ import bodegas from "./bodegas";
 import categorias from "./categorias";
 import cajas from "./cajas";
 import { departamentosTranslations } from "./departamentos";
+import { fincasTranslations } from "./fincas";
 import carguera from "./carguera";
 import product from "./productos";
 import materiales from "./materiales";
@@ -602,6 +603,7 @@ const resources = {
       ...notificaciones.en,
       ...asignaciones.en,
       ...departamentosTranslations.en.departamentos,
+      ...fincasTranslations.en.fincas,
     },
     
     cajasproductos: {
@@ -1188,6 +1190,7 @@ const resources = {
       ...notificaciones.es,
       ...asignaciones.es,
       ...departamentosTranslations.es.departamentos,
+      ...fincasTranslations.es.fincas,
     },
    
     cajasproductos: {
