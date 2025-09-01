@@ -43,7 +43,7 @@ const Sidebar: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }) => {
       subItems: [
         { label:"Empleados", icon: <FaUser />, path: "/cliente-usuario" },
         { label: "Colores", icon: <IoIosColorPalette />, path: "/cliente/color" },
-        { label: "Departamento", icon: <FaUserTie />, path: "/cliente/vendedor" },
+        { label: "Departamento", icon: <FaUserTie />, path: "/cliente/departamento" },
         { label: "Finca", icon: <FaGlobe />, path: "/cliente/pais" },
         { label: "Contrato", icon: <PiFileTextFill  />, path: "/cliente/marcaciones" },
       ],

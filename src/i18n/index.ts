@@ -8,6 +8,7 @@ import transportistas from "./transportistas";
 import bodegas from "./bodegas";
 import categorias from "./categorias";
 import cajas from "./cajas";
+import { departamentosTranslations } from "./departamentos";
 import carguera from "./carguera";
 import product from "./productos";
 import materiales from "./materiales";
@@ -600,6 +601,7 @@ const resources = {
       ...salesperson.en,
       ...notificaciones.en,
       ...asignaciones.en,
+      ...departamentosTranslations.en.departamentos,
     },
     
     cajasproductos: {
@@ -1185,6 +1187,7 @@ const resources = {
       ...salesperson.es,
       ...notificaciones.es,
       ...asignaciones.es,
+      ...departamentosTranslations.es.departamentos,
     },
    
     cajasproductos: {

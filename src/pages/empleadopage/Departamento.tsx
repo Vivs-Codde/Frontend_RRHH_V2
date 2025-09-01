@@ -1,14 +1,18 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import GenericTable from "../../components/GenericTable";
 import type { TableColumn } from "../../components/GenericTable";
-import WizardColor from "../../components/wizards/WizardColor";
-import { getColores, deleteColor, toggleColorStatus } from "../../services/coloresService";
-import type { Color as ColorType } from "../../services/coloresService";
+import WizardDepartamento from "../../components/wizards/WizardDepartamento";
+import { 
+  getDepartamentos, 
+  deleteDepartamento, 
+  toggleDepartamentoStatus,
+  type Departamento as DepartamentoType 
+} from "../../services/departamentosService";
 import { usePermissions } from "../../context/PermissionsContext";
 
-// Hook para detectar si es móvilF
+// Hook para detectar si es móvil
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -20,13 +24,13 @@ function useIsMobile() {
   return isMobile;
 }
 
-const Color: React.FC = () => {
+const Departamento: React.FC = () => {
   const { t } = useTranslation();
   const [wizardOpen, setWizardOpen] = React.useState(false);
-  const [colores, setColores] = useState<ColorType[]>([]);
+  const [departamentos, setDepartamentos] = useState<DepartamentoType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [editColor, setEditColor] = useState<ColorType | null>(null);
+  const [editDepartamento, setEditDepartamento] = useState<DepartamentoType | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -42,9 +46,9 @@ const Color: React.FC = () => {
     setWizardOpen(!isMobile ? true : false);
   }, [isMobile]);
 
-  // Crear refs para los campos del formulario de color
-  const nombreColor = React.useRef<HTMLInputElement>(null);
-  const codigoColor = React.useRef<HTMLInputElement>(null);
+  // Crear refs para los campos del formulario de departamento
+  const nombreDepartamento = React.useRef<HTMLInputElement>(null);
+  const colorDepartamento = React.useRef<HTMLInputElement>(null);
   const mainContainerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState<number | undefined>(undefined);
   
@@ -52,24 +56,24 @@ const Color: React.FC = () => {
     if (mainContainerRef.current) {
       setContainerHeight(mainContainerRef.current.offsetHeight);
     }
-  }, [colores.length, perPage, loading]);
+  }, [departamentos.length, perPage, loading]);
   
   // Configuración de columnas para la tabla genérica
   const columns: TableColumn[] = [
     { 
-      key: "color", 
-      label: "Color",
+      key: "nombre", 
+      label: "Nombre del Departamento",
       render: (value, row) => (
         <div className="flex items-center">
           <div 
             className="w-6 h-6 mr-2 rounded-full" 
-            style={{ backgroundColor: row.codigo || '#FFFFFF' }}
+            style={{ backgroundColor: row.color || '#FF5733' }}
           ></div>
           <span>{value}</span>
         </div>
       ),
     },
-    { key: "codigo", label: "Código Hexadecimal" },
+    { key: "color", label: "Color" },
     {
       key: "estado",
       label: "Estado",
@@ -110,86 +114,80 @@ const Color: React.FC = () => {
     },
   ];
 
-  // Cargar colores
+  // Cargar departamentos
   useEffect(() => {
-    fetchColores();
+    fetchDepartamentos();
   }, [refreshTrigger]);
 
-  const fetchColores = () => {
+  const fetchDepartamentos = () => {
     setLoading(true);
-    getColores()
+    getDepartamentos()
       .then((response) => {
-        setColores(response.data.data || []);
+        setDepartamentos(response.data.data || []);
         setTotalPages(response.data.last_page || 1);
         setError("");
       })
-      .catch(() => setError("Error al cargar los colores"))
+      .catch(() => setError("Error al cargar los departamentos"))
       .finally(() => setLoading(false));
   };
 
-  // Cambiar estado de color
-  const handleStatusChange = async (color: ColorType) => {
-    if (!color.id) return;
-    setStatusLoading((prev) => ({ ...prev, [color.id!]: true }));
+  // Cambiar estado de departamento
+  const handleStatusChange = async (departamento: DepartamentoType) => {
+    if (!departamento.id) return;
+    setStatusLoading((prev) => ({ ...prev, [departamento.id!]: true }));
     try {
-      await toggleColorStatus(color.id);
+      await toggleDepartamentoStatus(departamento.id);
       // Actualizar el estado en la UI
-      color.estado = !color.estado;
-      setColores((prev) =>
-        prev.map((c) =>
-          c.id === color.id ? { ...c, estado: color.estado } : c
+      departamento.estado = !departamento.estado;
+      setDepartamentos((prev) =>
+        prev.map((d) =>
+          d.id === departamento.id ? { ...d, estado: departamento.estado } : d
         )
       );
     } catch (e) {
-      alert("Error al cambiar el estado del color");
+      alert("Error al cambiar el estado del departamento");
     } finally {
-      setStatusLoading((prev) => ({ ...prev, [color.id!]: false }));
+      setStatusLoading((prev) => ({ ...prev, [departamento.id!]: false }));
     }
   };
 
-  // Filtrar y paginar colores
-  const filteredColores = colores.filter((color: ColorType) =>
-    color.color?.toLowerCase().includes(search.toLowerCase()) ||
-    color.codigo?.toLowerCase().includes(search.toLowerCase())
+  // Filtrar y paginar departamentos
+  const filteredDepartamentos = departamentos.filter((departamento: DepartamentoType) =>
+    departamento.nombre?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Paginación de colores filtrados
-  const paginatedColores = filteredColores.slice(
+  // Paginación de departamentos filtrados
+  const paginatedDepartamentos = filteredDepartamentos.slice(
     (page - 1) * perPage,
     page * perPage
   );
 
-  // Llamar esto después de agregar o editar un color
-  const handleColorAdded = () => {
+  // Llamar esto después de agregar o editar un departamento
+  const handleDepartamentoAdded = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleOpenWizard = () => {
-    setEditColor(null);
-    setWizardOpen(true);
-  };
-
   // Abrir wizard en modo edición
-  const handleEditColor = (color: ColorType) => {
-    setEditColor(color);
+  const handleEditDepartamento = (departamento: DepartamentoType) => {
+    setEditDepartamento(departamento);
     setWizardOpen(true);
   };
 
-  // Función para eliminar color
-  const handleDeleteColor = (id: number) => {
+  // Función para eliminar departamento
+  const handleDeleteDepartamento = (id: number) => {
     setDeletingId(id);
     setShowDeleteDialog(true);
   };
   
-  // Confirmar eliminación de color
+  // Confirmar eliminación de departamento
   const confirmDelete = async () => {
     if (deletingId) {
       setLoading(true);
       try {
-        await deleteColor(deletingId);
+        await deleteDepartamento(deletingId);
         setRefreshTrigger(prev => prev + 1);
       } catch (error) {
-        setError("Error al eliminar el color");
+        setError("Error al eliminar el departamento");
       } finally {
         setShowDeleteDialog(false);
         setDeletingId(null);
@@ -203,9 +201,9 @@ const Color: React.FC = () => {
     // Aquí puedes manejar el guardado si lo necesitas
   };
 
-  // Verificar permiso para eliminar color
-  const canDeleteColor = userPermissions.some(
-    (p) => p.action === "eliminar" && p.module === "color"
+  // Verificar permiso para eliminar departamento
+  const canDeleteDepartamento = userPermissions.some(
+    (p) => p.action === "eliminar" && p.module === "departamento"
   );
 
   return (
@@ -213,14 +211,14 @@ const Color: React.FC = () => {
       <main className="max-w-full pl-0 pr-4">
         <div className={`flex ${!isMobile ? "flex-row" : "flex-col"} flex-wrap relative`}>
           <div
-  className="bg-white rounded-lg shadow-md p-4 flex-1 ml-0 w-full max-w-full h-full min-h-full flex flex-col"
-  ref={mainContainerRef}
->
+            className="bg-white rounded-lg shadow-md p-4 flex-1 ml-0 w-full max-w-full h-full min-h-full flex flex-col"
+            ref={mainContainerRef}
+          >
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
               <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-start order-2 sm:order-1">
                 <input
                   type="text"
-                  placeholder="Buscar color..."
+                  placeholder="Buscar departamento..."
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -231,7 +229,7 @@ const Color: React.FC = () => {
               </div>
               <div className="flex-1 flex justify-center items-center order-1 sm:order-2">
                 <h3 className="text-xl font-semibold text-gray-800 text-center">
-                  Gestión de Colores
+                  Gestión de Departamentos
                 </h3>
               </div>
               {/* Botón agregar solo en móvil */}
@@ -239,7 +237,7 @@ const Color: React.FC = () => {
                 <div className="flex justify-end flex-shrink-0 order-3 mt-2 sm:mt-0">
                   <button
                     onClick={() => {
-                      setEditColor(null);
+                      setEditDepartamento(null);
                       setWizardOpen(true);
                     }}
                     className="w-full sm:w-auto px-6 py-2 rounded-lg flex items-center gap-2 transition-colors justify-center"
@@ -251,7 +249,7 @@ const Color: React.FC = () => {
                     }}
                   >
                     <Plus size={20} />
-                    Agregar Color
+                    Agregar Departamento
                   </button>
                 </div>
               )}
@@ -260,12 +258,12 @@ const Color: React.FC = () => {
             {/* Tabla genérica (solo en pantallas medianas o grandes) */}
             <div className="hidden sm:block">
               <GenericTable
-                data={paginatedColores}
+                data={paginatedDepartamentos}
                 columns={columns}
                 loading={loading}
                 error={error}
-                onEdit={handleEditColor}
-                onDelete={canDeleteColor ? handleDeleteColor : undefined}
+                onEdit={handleEditDepartamento}
+                onDelete={canDeleteDepartamento ? handleDeleteDepartamento : undefined}
                 showActions={true}
                 search={search}
                 setSearch={(s) => {
@@ -285,7 +283,7 @@ const Color: React.FC = () => {
                 emptyMessage={
                   search
                     ? "No se encontraron resultados"
-                    : "No hay colores registrados"
+                    : "No hay departamentos registrados"
                 }
                 actionColumnLabel="Acciones"
               />
@@ -296,51 +294,48 @@ const Color: React.FC = () => {
               <div className="space-y-4 h-[calc(100vh-120px)] overflow-y-auto">
                 {loading ? (
                   <div className="text-center py-8">
-                    Cargando colores...
+                    Cargando departamentos...
                   </div>
                 ) : error ? (
                   <div className="text-center text-red-500 py-8">{error}</div>
-                ) : filteredColores.length === 0 ? (
+                ) : filteredDepartamentos.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    {search ? "No se encontraron resultados" : "No hay colores registrados"}
+                    {search ? "No se encontraron resultados" : "No hay departamentos registrados"}
                   </div>
                 ) : (
-                  paginatedColores.map((color: ColorType, idx: number) => (
+                  paginatedDepartamentos.map((departamento: DepartamentoType, idx: number) => (
                     <div
-                      key={color.id || idx}
+                      key={departamento.id || idx}
                       className="bg-white shadow rounded-lg p-4"
                     >
                       <div className="flex flex-col items-center gap-1 mb-2">
                         <div 
                           className="w-12 h-12 rounded-full mb-2" 
-                          style={{ backgroundColor: color.codigo || '#FFFFFF' }}
+                          style={{ backgroundColor: departamento.color || '#FF5733' }}
                         ></div>
                         <h4
                           className="font-semibold text-lg text-fuchsia-700 text-center break-words w-full"
                           style={{ wordBreak: "break-word" }}
                         >
-                          {color.color}
+                          {departamento.nombre}
                         </h4>
                         <p className="text-xs text-gray-500 text-center w-full">
-                          {color.codigo}
+                          {departamento.color}
                         </p>
                       </div>
                       <div className="flex justify-end gap-2 mt-2">
                         <button
-                          className="text-fuchsia-700 hover:text-fuchsia-900 p-2 rounded-full border border-fuchsia-200 bg-white"
-                          onClick={() => handleEditColor(color)}
-                          title="Editar"
-                          style={{ background: "#fff" }}
+                          onClick={() => handleEditDepartamento(departamento)}
+                          className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
                         >
-                          <Edit2 size={18} color="#cc3399" />
+                          Editar
                         </button>
-                        {canDeleteColor && (
+                        {canDeleteDepartamento && (
                           <button
-                            className="text-red-600 hover:text-red-800 p-2 rounded-full border border-red-200 bg-white"
-                            onClick={() => handleDeleteColor(color.id!)}
-                            title="Eliminar"
+                            onClick={() => handleDeleteDepartamento(departamento.id!)}
+                            className="px-3 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
                           >
-                            <Trash2 size={18} color="#dc2626" />
+                            Eliminar
                           </button>
                         )}
                       </div>
@@ -348,28 +343,25 @@ const Color: React.FC = () => {
                   ))
                 )}
                 {/* Paginación para móviles */}
-                {!loading && !error && filteredColores.length > 0 && (
+                {!loading && !error && filteredDepartamentos.length > 0 && (
                   <div className="flex justify-center mt-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setPage(page - 1)}
-                        disabled={page === 1}
-                        className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                        onClick={() => setPage(Math.max(1, page - 1))}
+                        disabled={page <= 1}
+                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
                       >
-                        {t("common.previous")}
+                        Anterior
                       </button>
-                      <span className="text-sm">
-                        {t("common.page", {
-                          current: page,
-                          total: totalPages || 1,
-                        })}
+                      <span className="px-3 py-1">
+                        Página {page} de {Math.ceil(filteredDepartamentos.length / perPage)}
                       </span>
                       <button
-                        onClick={() => setPage(page + 1)}
-                        disabled={page === totalPages || totalPages === 0}
-                        className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                        onClick={() => setPage(Math.min(Math.ceil(filteredDepartamentos.length / perPage), page + 1))}
+                        disabled={page >= Math.ceil(filteredDepartamentos.length / perPage)}
+                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
                       >
-                        {t("common.next")}
+                        Siguiente
                       </button>
                     </div>
                   </div>
@@ -380,19 +372,19 @@ const Color: React.FC = () => {
           {/* Wizard Component visible según pantalla */}
           {wizardOpen && (
            <div className="w-full md:w-[400px] flex-shrink-0 h-full flex ml-4">
-              <WizardColor
+              <WizardDepartamento
                 showWizard={wizardOpen}
                 setShowWizard={setWizardOpen}
                 refs={{
-                  nombreColor,
-                  codigoColor
+                  nombreDepartamento,
+                  colorDepartamento
                 }}
                 handleAutoSave={handleAutoSave}
-                onCreated={handleColorAdded}
-                editColor={editColor}
+                onCreated={handleDepartamentoAdded}
+                editDepartamento={editDepartamento}
                 onClose={() => {
                   if (isMobile) setWizardOpen(false);
-                  setEditColor(null);
+                  setEditDepartamento(null);
                 }}
                 hideCloseButton={!isMobile}
                 tableHeight={containerHeight}
@@ -405,7 +397,7 @@ const Color: React.FC = () => {
             <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
               <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
                 <div className="text-lg font-bold mb-2">Confirmar eliminación</div>
-                <div className="text-gray-700 mb-6">¿Está seguro de eliminar este color? Esta acción no se puede deshacer.</div>
+                <div className="text-gray-700 mb-6">¿Está seguro de eliminar este departamento? Esta acción no se puede deshacer.</div>
                 <div className="flex justify-end gap-2">
                   <button
                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-800"
@@ -431,4 +423,4 @@ const Color: React.FC = () => {
   );
 };
 
-export default Color;
+export default Departamento;

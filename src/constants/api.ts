@@ -41,6 +41,7 @@ export const API_ENDPOINTS = {
     CREATE: `${API_BASE_URL}/api/departamentos`,
     UPDATE: (id: number | string) => `${API_BASE_URL}/api/departamentos/${id}`,
     DELETE: (id: number | string) => `${API_BASE_URL}/api/departamentos/${id}`,
+    UPDATE_STATUS: (id: number | string) => `${API_BASE_URL}/api/departamentos/${id}/estado`,
   },
   //FINCAS
   FINCAS: {
