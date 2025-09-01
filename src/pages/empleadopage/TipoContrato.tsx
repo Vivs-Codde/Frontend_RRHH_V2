@@ -311,13 +311,13 @@ const TipoContrato: React.FC = () => {
                             <input
                               type="checkbox"
                               className="sr-only peer"
-                              checked={tipo.estado === 1 || tipo.estado === true}
+                              checked={!!tipo.estado} // Corregido para manejar booleanos correctamente
                               onChange={() => handleStatusChange(tipo)}
                               disabled={statusLoading[tipo.id!]}
                             />
                             <div
                               className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-fuchsia-300 rounded-full peer transition-colors duration-200 ${
-                                tipo.estado === 1 || tipo.estado === true
+                                !!tipo.estado
                                   ? "peer-checked:bg-[#cc3399] bg-[#cc3399]"
                                   : "peer-checked:bg-gray-300 bg-gray-300"
                               }`}
@@ -326,12 +326,12 @@ const TipoContrato: React.FC = () => {
                           </label>
                           <span
                             className={`ml-2 text-xs font-medium ${
-                              tipo.estado === 1 || tipo.estado === true
+                              !!tipo.estado
                                 ? "text-green-700"
                                 : "text-gray-500"
                             }`}
                           >
-                            {tipo.estado === 1 || tipo.estado === true
+                            {!!tipo.estado
                               ? t("common.active", "Activo")
                               : t("common.inactive", "Inactivo")}
                           </span>
