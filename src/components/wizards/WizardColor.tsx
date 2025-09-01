@@ -37,6 +37,7 @@ const WizardColor: React.FC<WizardColorProps> = ({
   const [success, setSuccess] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [estado, setEstado] = useState(true);
+  const [colorValue, setColorValue] = useState("#000000"); // Estado para el color
   const [fieldErrors, setFieldErrors] = useState<{
     color?: boolean;
     codigo?: boolean;
@@ -66,11 +67,13 @@ const WizardColor: React.FC<WizardColorProps> = ({
     if (showWizard && editColor) {
       if (refs.nombreColor.current) refs.nombreColor.current.value = editColor.color || "";
       if (refs.codigoColor.current) refs.codigoColor.current.value = editColor.codigo || "";
+      setColorValue(editColor.codigo || "#000000"); // Actualizar estado del color
       // Verificar el estado como booleano o como valor 1/0
       setEstado(editColor.estado === true || editColor.estado === 1 as unknown as boolean);
     } else if (showWizard && !editColor) {
       if (refs.nombreColor.current) refs.nombreColor.current.value = "";
       if (refs.codigoColor.current) refs.codigoColor.current.value = "#000000";
+      setColorValue("#000000"); // Resetear estado del color
       setEstado(true);
     }
     setShowSuccessModal(false);
@@ -284,10 +287,12 @@ const WizardColor: React.FC<WizardColorProps> = ({
                 <input
                   type="color"
                   className="h-10 w-10 mr-2 rounded border-0"
-                  value={refs.codigoColor.current?.value || "#000000"}
+                  value={colorValue}
                   onChange={(e) => {
+                    const newColor = e.target.value;
+                    setColorValue(newColor);
                     if (refs.codigoColor.current) {
-                      refs.codigoColor.current.value = e.target.value;
+                      refs.codigoColor.current.value = newColor;
                     }
                   }}
                 />
@@ -302,6 +307,15 @@ const WizardColor: React.FC<WizardColorProps> = ({
                       : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   } rounded-md`}
                   placeholder="Ej: #0066CC"
+                  value={colorValue}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setColorValue(newValue);
+                    // Actualizar el valor del color picker cuando cambie el input de texto y sea un hex válido
+                    if (newValue.match(/^#[0-9A-Fa-f]{6}$/)) {
+                      // El color picker se actualizará automáticamente porque ambos usan colorValue
+                    }
+                  }}
                 />
               </div>
               {fieldErrors.codigoDuplicado && (

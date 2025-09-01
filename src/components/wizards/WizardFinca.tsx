@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getAuthHeaders, API_ENDPOINTS } from "../../constants/api";
-import { createDepartamento, updateDepartamento } from "../../services/departamentosService";
-import type { Departamento } from "../../services/departamentosService";
+import { createFinca, updateFinca } from "../../services/fincasService";
+import type { Finca } from "../../services/fincasService";
 import SuccessModal from "../modals/SuccessModal";
 
-interface WizardDepartamentoProps {
+interface WizardFincaProps {
   showWizard: boolean;
   setShowWizard: (show: boolean) => void;
   refs: {
-    nombreDepartamento: React.RefObject<HTMLInputElement | null>;
-    colorDepartamento: React.RefObject<HTMLInputElement | null>;
+    nombreFinca: React.RefObject<HTMLInputElement | null>;
   };
   handleAutoSave?: () => void;
   onCreated?: () => void;
-  editDepartamento?: Departamento | null;
+  editFinca?: Finca | null;
   onClose?: () => void;
   hideCloseButton?: boolean;
   tableHeight?: number;
 }
 
-const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
+const WizardFinca: React.FC<WizardFincaProps> = ({
   showWizard,
   setShowWizard,
   refs,
   handleAutoSave,
   onCreated,
-  editDepartamento,
+  editFinca,
   onClose,
   hideCloseButton = false,
   tableHeight
@@ -37,47 +36,41 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
   const [success, setSuccess] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [estado, setEstado] = useState(true);
-  const [colorValue, setColorValue] = useState("#FF5733"); // Estado para el color
   const [fieldErrors, setFieldErrors] = useState<{
     nombre?: boolean;
-    color?: boolean;
     nombreDuplicado?: boolean;
   }>({});
-  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [fincas, setFincas] = useState<Finca[]>([]);
 
-  // Obtener lista de departamentos al abrir el wizard
+  // Obtener lista de fincas al abrir el wizard
   useEffect(() => {
-    async function fetchDepartamentos() {
+    async function fetchFincas() {
       try {
-        const resp = await fetch(API_ENDPOINTS.DEPARTAMENTOS.LIST, {
+        const resp = await fetch(API_ENDPOINTS.FINCAS.LIST, {
           headers: getAuthHeaders(),
         });
         if (resp.ok) {
           const data = await resp.json();
-          setDepartamentos(Array.isArray(data.data?.data) ? data.data.data : []);
+          setFincas(Array.isArray(data.data?.data) ? data.data.data : []);
         }
       } catch {}
     }
-    if (showWizard) fetchDepartamentos();
+    if (showWizard) fetchFincas();
   }, [showWizard]);
 
-  // Efecto para inicializar los campos si editDepartamento cambia
+  // Efecto para inicializar los campos si editFinca cambia
   useEffect(() => {
-    if (showWizard && editDepartamento) {
-      if (refs.nombreDepartamento.current) refs.nombreDepartamento.current.value = editDepartamento.nombre || "";
-      if (refs.colorDepartamento.current) refs.colorDepartamento.current.value = editDepartamento.color || "";
-      setColorValue(editDepartamento.color || "#FF5733"); // Actualizar estado del color
+    if (showWizard && editFinca) {
+      if (refs.nombreFinca.current) refs.nombreFinca.current.value = editFinca.nombre || "";
       // Verificar el estado como booleano o como valor 1/0
-      setEstado(editDepartamento.estado === true || editDepartamento.estado === 1 as unknown as boolean);
-    } else if (showWizard && !editDepartamento) {
-      if (refs.nombreDepartamento.current) refs.nombreDepartamento.current.value = "";
-      if (refs.colorDepartamento.current) refs.colorDepartamento.current.value = "#FF5733";
-      setColorValue("#FF5733"); // Resetear estado del color
+      setEstado(editFinca.estado === true || editFinca.estado === 1 as unknown as boolean);
+    } else if (showWizard && !editFinca) {
+      if (refs.nombreFinca.current) refs.nombreFinca.current.value = "";
       setEstado(true);
     }
     setShowSuccessModal(false);
     setSuccess("");
-  }, [showWizard, editDepartamento, refs]);
+  }, [showWizard, editFinca, refs]);
 
   if (!showWizard) return null;
 
@@ -86,16 +79,14 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
     setError("");
     setSuccess("");
     setFieldErrors({});
-    const nombre = refs.nombreDepartamento.current?.value?.trim() || "";
-    const color = refs.colorDepartamento.current?.value?.trim() || "";
-    let errors: {nombre?: boolean; color?: boolean; nombreDuplicado?: boolean} = {};
+    const nombre = refs.nombreFinca.current?.value?.trim() || "";
+    let errors: {nombre?: boolean; nombreDuplicado?: boolean} = {};
 
     if (!nombre) errors.nombre = true;
-    if (!color) errors.color = true;
     
     // Validación de duplicados (solo en modo crear)
-    if (!editDepartamento) {
-      if (departamentos.some(d => d.nombre?.toLowerCase() === nombre.toLowerCase())) {
+    if (!editFinca) {
+      if (fincas.some(f => f.nombre?.toLowerCase() === nombre.toLowerCase())) {
         errors.nombreDuplicado = true;
       }
     }
@@ -103,28 +94,26 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       
-      if (errors.nombre) setError(t('fieldRequired', {field: 'Nombre del departamento'}));
-      else if (errors.color) setError(t('fieldRequired', {field: 'Color del departamento'}));
-      else if (errors.nombreDuplicado) setError('El nombre del departamento ya existe');
+      if (errors.nombre) setError(t('fieldRequired', {field: 'Nombre de la finca'}));
+      else if (errors.nombreDuplicado) setError('El nombre de la finca ya existe');
       return;
     }
     
     setLoading(true);
     try {
       const data = {
-        nombre: refs.nombreDepartamento.current?.value.trim() || "",
-        color: refs.colorDepartamento.current?.value.trim() || "",
+        nombre: refs.nombreFinca.current?.value.trim() || "",
         estado: estado,
       };
       
-      if (editDepartamento && editDepartamento.id) {
+      if (editFinca && editFinca.id) {
         // UPDATE
-        await updateDepartamento(editDepartamento.id, data);
-        setSuccess('Departamento actualizado correctamente');
+        await updateFinca(editFinca.id, data);
+        setSuccess('Finca actualizada correctamente');
       } else {
         // CREATE
-        await createDepartamento(data);
-        setSuccess('Departamento creado correctamente');
+        await createFinca(data);
+        setSuccess('Finca creada correctamente');
       }
       
       setShowSuccessModal(true);
@@ -134,7 +123,7 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
         else setShowWizard(false);
       }, 1500);
     } catch (e: any) {
-      let errorMsg = 'Error al guardar el departamento';
+      let errorMsg = 'Error al guardar la finca';
       if (e && e.message) errorMsg = e.message;
       setError(errorMsg);
       
@@ -174,7 +163,7 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-800">
-            {editDepartamento ? 'Editar Departamento' : 'Nuevo Departamento'}
+            {editFinca ? 'Editar Finca' : 'Nueva Finca'}
           </h3>
           <div className="flex items-center space-x-2">
             {!hideCloseButton && (
@@ -242,76 +231,31 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
               </span>
             </div>
 
-            {/* Nombre del Departamento */}
+            {/* Nombre de la Finca */}
             <div>
               <label
-                htmlFor="nombreDepartamento"
+                htmlFor="nombreFinca"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Nombre del Departamento *
+                Nombre de la Finca *
               </label>
               <input
                 type="text"
-                name="nombreDepartamento"
-                id="nombreDepartamento"
-                ref={refs.nombreDepartamento as React.RefObject<HTMLInputElement>}
+                name="nombreFinca"
+                id="nombreFinca"
+                ref={refs.nombreFinca as React.RefObject<HTMLInputElement>}
                 className={`w-full p-2 border ${
                   fieldErrors.nombre || fieldErrors.nombreDuplicado
                     ? "border-red-300 focus:ring-red-500 focus:border-red-500"
                     : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 } rounded-md`}
-                placeholder="Ej: Recursos Humanos"
+                placeholder="Ej: Finca San José"
               />
               {fieldErrors.nombreDuplicado && (
                 <p className="mt-1 text-xs text-red-600">
-                  Este departamento ya existe
+                  Esta finca ya existe
                 </p>
               )}
-            </div>
-            
-            {/* Color del Departamento */}
-            <div>
-              <label
-                htmlFor="colorDepartamento"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Color del Departamento (Hexadecimal) *
-              </label>
-              <div className="flex items-center">
-                <input
-                  type="color"
-                  className="h-10 w-10 mr-2 rounded border-0"
-                  value={colorValue}
-                  onChange={(e) => {
-                    const newColor = e.target.value;
-                    setColorValue(newColor);
-                    if (refs.colorDepartamento.current) {
-                      refs.colorDepartamento.current.value = newColor;
-                    }
-                  }}
-                />
-                <input
-                  type="text"
-                  name="colorDepartamento"
-                  id="colorDepartamento"
-                  ref={refs.colorDepartamento as React.RefObject<HTMLInputElement>}
-                  className={`flex-1 p-2 border ${
-                    fieldErrors.color
-                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                  } rounded-md`}
-                  placeholder="Ej: #FF5733"
-                  value={colorValue}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    setColorValue(newValue);
-                    // Actualizar el valor del color picker cuando cambie el input de texto y sea un hex válido
-                    if (newValue.match(/^#[0-9A-Fa-f]{6}$/)) {
-                      // El color picker se actualizará automáticamente porque ambos usan colorValue
-                    }
-                  }}
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -340,8 +284,8 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
             disabled={loading}
           >
             {loading
-              ? (editDepartamento ? t('common.updating', 'Actualizando...') : t('common.creating', 'Creando...'))
-              : (editDepartamento ? t('common.update', 'Actualizar') : t('common.create', 'Crear'))}
+              ? (editFinca ? t('common.updating', 'Actualizando...') : t('common.creating', 'Creando...'))
+              : (editFinca ? t('common.update', 'Actualizar') : t('common.create', 'Crear'))}
           </button>
         </div>
         
@@ -352,4 +296,4 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
   );
 };
 
-export default WizardDepartamento;
+export default WizardFinca;

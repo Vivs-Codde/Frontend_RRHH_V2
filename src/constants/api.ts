@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
     CREATE: `${API_BASE_URL}/api/fincas`,
     UPDATE: (id: number | string) => `${API_BASE_URL}/api/fincas/${id}`,
     DELETE: (id: number | string) => `${API_BASE_URL}/api/fincas/${id}`,
+    UPDATE_STATUS: (id: number | string) => `${API_BASE_URL}/api/fincas/${id}/estado`,
   },
   //TIPO DE CONTRATO
   TIPOS_CONTRATO: {
