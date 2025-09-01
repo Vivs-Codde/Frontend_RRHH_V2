@@ -10,6 +10,7 @@ import categorias from "./categorias";
 import cajas from "./cajas";
 import { departamentosTranslations } from "./departamentos";
 import { fincasTranslations } from "./fincas";
+import { tiposContrato } from "./tiposContrato";
 import carguera from "./carguera";
 import product from "./productos";
 import materiales from "./materiales";
@@ -604,6 +605,7 @@ const resources = {
       ...asignaciones.en,
       ...departamentosTranslations.en.departamentos,
       ...fincasTranslations.en.fincas,
+      ...tiposContrato.en,
     },
     
     cajasproductos: {
@@ -1191,6 +1193,7 @@ const resources = {
       ...asignaciones.es,
       ...departamentosTranslations.es.departamentos,
       ...fincasTranslations.es.fincas,
+      ...tiposContrato.es,
     },
    
     cajasproductos: {

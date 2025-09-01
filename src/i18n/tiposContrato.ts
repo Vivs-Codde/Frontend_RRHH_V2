@@ -1,0 +1,86 @@
+export const tiposContrato = {
+  es: {
+    title: 'Gestión de Tipos de Contrato',
+    new: 'Nuevo Tipo de Contrato',
+    edit: 'Editar Tipo de Contrato',
+    tipo: 'Tipo de Contrato',
+    required: {
+      tipo: 'El tipo de contrato es requerido',
+    },
+    validation: {
+      tipoDuplicated: 'Este tipo de contrato ya existe',
+    },
+    actions: {
+      creating: 'Creando tipo de contrato...',
+      updating: 'Actualizando tipo de contrato...',
+      created: 'Tipo de contrato creado correctamente',
+      updated: 'Tipo de contrato actualizado correctamente',
+      deleted: 'Tipo de contrato eliminado correctamente',
+      errorCreating: 'Error al crear el tipo de contrato',
+      errorUpdating: 'Error al actualizar el tipo de contrato',
+      errorDeleting: 'Error al eliminar el tipo de contrato',
+      errorLoadingList: 'Error al cargar los tipos de contrato',
+      errorChangingStatus: 'Error al cambiar el estado del tipo de contrato',
+    },
+    table: {
+      tipo: 'Tipo de Contrato',
+      estado: 'Estado',
+      actions: 'Acciones',
+      search: 'Buscar tipo de contrato...',
+      noResults: 'No se encontraron resultados',
+      noData: 'No hay tipos de contrato registrados',
+      loading: 'Cargando tipos de contrato...',
+    },
+    modal: {
+      deleteTitle: 'Confirmar eliminación',
+      deleteMessage: '¿Está seguro de eliminar este tipo de contrato? Esta acción no se puede deshacer.',
+      cancel: 'Cancelar',
+      delete: 'Eliminar',
+    },
+    placeholders: {
+      tipo: 'Ej: Indefinido',
+    },
+  },
+  en: {
+    title: 'Contract Types Management',
+    new: 'New Contract Type',
+    edit: 'Edit Contract Type',
+    tipo: 'Contract Type',
+    required: {
+      tipo: 'Contract type is required',
+    },
+    validation: {
+      tipoDuplicated: 'This contract type already exists',
+    },
+    actions: {
+      creating: 'Creating contract type...',
+      updating: 'Updating contract type...',
+      created: 'Contract type created successfully',
+      updated: 'Contract type updated successfully',
+      deleted: 'Contract type deleted successfully',
+      errorCreating: 'Error creating contract type',
+      errorUpdating: 'Error updating contract type',
+      errorDeleting: 'Error deleting contract type',
+      errorLoadingList: 'Error loading contract types',
+      errorChangingStatus: 'Error changing contract type status',
+    },
+    table: {
+      tipo: 'Contract Type',
+      estado: 'Status',
+      actions: 'Actions',
+      search: 'Search contract type...',
+      noResults: 'No results found',
+      noData: 'No contract types registered',
+      loading: 'Loading contract types...',
+    },
+    modal: {
+      deleteTitle: 'Confirm deletion',
+      deleteMessage: 'Are you sure you want to delete this contract type? This action cannot be undone.',
+      cancel: 'Cancel',
+      delete: 'Delete',
+    },
+    placeholders: {
+      tipo: 'e.g: Permanent',
+    },
+  },
+};
