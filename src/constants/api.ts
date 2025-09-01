@@ -57,6 +57,7 @@ export const API_ENDPOINTS = {
     CREATE: `${API_BASE_URL}/api/tipos-contrato`,
     UPDATE: (id: number | string) => `${API_BASE_URL}/api/tipos-contrato/${id}`,
     DELETE: (id: number | string) => `${API_BASE_URL}/api/tipos-contrato/${id}`,
+    UPDATE_STATUS: (id: number | string) => `${API_BASE_URL}/api/tipos-contrato/${id}/estado`,
   },
   //ESTRUCTURAS ORGANIZACIONELES
   ESTRUCTURAS: {
