@@ -3,7 +3,8 @@ import { API_ENDPOINTS, getAuthHeaders } from '../constants/api';
 export interface Departamento {
   id?: number;
   nombre: string;
-  color: string;
+  color?: string; // El color hexadecimal (para mostrar)
+  color_id: number; // ID del color seleccionado
   estado: boolean;
   created_at?: string;
   updated_at?: string;

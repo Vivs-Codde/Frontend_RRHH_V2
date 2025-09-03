@@ -10,7 +10,13 @@ import {
   toggleDepartamentoStatus,
   type Departamento as DepartamentoType 
 } from "../../services/departamentosService";
+import { getColores, type Color } from "../../services/coloresService";
 import { usePermissions } from "../../context/PermissionsContext";
+
+// Tipo extendido para incluir información del color
+interface DepartamentoConColor extends DepartamentoType {
+  colorInfo?: Color | null;
+}
 
 // Hook para detectar si es móvil
 function useIsMobile() {
@@ -27,10 +33,11 @@ function useIsMobile() {
 const Departamento: React.FC = () => {
   const { t } = useTranslation();
   const [wizardOpen, setWizardOpen] = React.useState(false);
-  const [departamentos, setDepartamentos] = useState<DepartamentoType[]>([]);
+  const [departamentos, setDepartamentos] = useState<DepartamentoConColor[]>([]);
+  const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [editDepartamento, setEditDepartamento] = useState<DepartamentoType | null>(null);
+  const [editDepartamento, setEditDepartamento] = useState<DepartamentoConColor | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -48,7 +55,7 @@ const Departamento: React.FC = () => {
 
   // Crear refs para los campos del formulario de departamento
   const nombreDepartamento = React.useRef<HTMLInputElement>(null);
-  const colorDepartamento = React.useRef<HTMLInputElement>(null);
+  const colorDepartamento = React.useRef<HTMLSelectElement>(null);
   const mainContainerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState<number | undefined>(undefined);
   
@@ -63,17 +70,28 @@ const Departamento: React.FC = () => {
     { 
       key: "nombre", 
       label: "Nombre del Departamento",
-      render: (value, row) => (
-        <div className="flex items-center">
-          <div 
-            className="w-6 h-6 mr-2 rounded-full" 
-            style={{ backgroundColor: row.color || '#FF5733' }}
-          ></div>
-          <span>{value}</span>
-        </div>
-      ),
+      render: (value, row) => {
+        // Usar la información enriquecida del color
+        const colorHex = row.colorInfo?.codigo || '#CCCCCC';
+        return (
+          <div className="flex items-center">
+            <div 
+              className="w-6 h-6 mr-2 rounded-full" 
+              style={{ backgroundColor: colorHex }}
+            ></div>
+            <span>{value}</span>
+          </div>
+        );
+      },
     },
-    { key: "color", label: "Color" },
+    { 
+      key: "color_id", 
+      label: "Color",
+      render: (value, row) => {
+        console.log('Renderizando color para departamento:', row.nombre, 'color_id:', value);
+        return row.colorInfo ? `${row.colorInfo.color}` : 'Sin color';
+      }
+    },
     {
       key: "estado",
       label: "Estado",
@@ -114,25 +132,50 @@ const Departamento: React.FC = () => {
     },
   ];
 
-  // Cargar departamentos
+  // Cargar departamentos y colores
   useEffect(() => {
-    fetchDepartamentos();
+    const loadData = async () => {
+      try {
+        // Primero cargar colores
+        console.log('Cargando colores...');
+        const coloresResponse = await getColores({ estado: true, per_page: 100 });
+        const colores = coloresResponse.data.data || [];
+        console.log('Colores cargados:', colores);
+        setColoresDisponibles(colores);
+        
+        // Luego cargar departamentos
+        console.log('Cargando departamentos...');
+        setLoading(true);
+        const deptResponse = await getDepartamentos();
+        const departamentos = deptResponse.data.data || [];
+        console.log('Departamentos cargados:', departamentos);
+        
+        // Enriquecer departamentos con información de color
+        const departamentosEnriquecidos = departamentos.map(dept => {
+          const colorInfo = colores.find(c => c.id === dept.color_id);
+          return {
+            ...dept,
+            colorInfo: colorInfo || null
+          };
+        });
+        
+        console.log('Departamentos enriquecidos:', departamentosEnriquecidos);
+        setDepartamentos(departamentosEnriquecidos);
+        setTotalPages(deptResponse.data.last_page || 1);
+        setError("");
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        setError("Error al cargar los departamentos y colores");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
   }, [refreshTrigger]);
 
-  const fetchDepartamentos = () => {
-    setLoading(true);
-    getDepartamentos()
-      .then((response) => {
-        setDepartamentos(response.data.data || []);
-        setTotalPages(response.data.last_page || 1);
-        setError("");
-      })
-      .catch(() => setError("Error al cargar los departamentos"))
-      .finally(() => setLoading(false));
-  };
-
   // Cambiar estado de departamento
-  const handleStatusChange = async (departamento: DepartamentoType) => {
+  const handleStatusChange = async (departamento: DepartamentoConColor) => {
     if (!departamento.id) return;
     setStatusLoading((prev) => ({ ...prev, [departamento.id!]: true }));
     try {
@@ -152,7 +195,7 @@ const Departamento: React.FC = () => {
   };
 
   // Filtrar y paginar departamentos
-  const filteredDepartamentos = departamentos.filter((departamento: DepartamentoType) =>
+  const filteredDepartamentos = departamentos.filter((departamento: DepartamentoConColor) =>
     departamento.nombre?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -168,7 +211,7 @@ const Departamento: React.FC = () => {
   };
 
   // Abrir wizard en modo edición
-  const handleEditDepartamento = (departamento: DepartamentoType) => {
+  const handleEditDepartamento = (departamento: DepartamentoConColor) => {
     setEditDepartamento(departamento);
     setWizardOpen(true);
   };
@@ -194,11 +237,6 @@ const Departamento: React.FC = () => {
         setLoading(false);
       }
     }
-  };
-
-  // Opcional: función para guardar datos al salir del campo
-  const handleAutoSave = () => {
-    // Aquí puedes manejar el guardado si lo necesitas
   };
 
   // Verificar permiso para eliminar departamento
@@ -303,44 +341,48 @@ const Departamento: React.FC = () => {
                     {search ? "No se encontraron resultados" : "No hay departamentos registrados"}
                   </div>
                 ) : (
-                  paginatedDepartamentos.map((departamento: DepartamentoType, idx: number) => (
-                    <div
-                      key={departamento.id || idx}
-                      className="bg-white shadow rounded-lg p-4"
-                    >
-                      <div className="flex flex-col items-center gap-1 mb-2">
-                        <div 
-                          className="w-12 h-12 rounded-full mb-2" 
-                          style={{ backgroundColor: departamento.color || '#FF5733' }}
-                        ></div>
-                        <h4
-                          className="font-semibold text-lg text-fuchsia-700 text-center break-words w-full"
-                          style={{ wordBreak: "break-word" }}
-                        >
-                          {departamento.nombre}
-                        </h4>
-                        <p className="text-xs text-gray-500 text-center w-full">
-                          {departamento.color}
-                        </p>
-                      </div>
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button
-                          onClick={() => handleEditDepartamento(departamento)}
-                          className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
-                        >
-                          Editar
-                        </button>
-                        {canDeleteDepartamento && (
-                          <button
-                            onClick={() => handleDeleteDepartamento(departamento.id!)}
-                            className="px-3 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
+                  paginatedDepartamentos.map((departamento: DepartamentoConColor, idx: number) => {
+                    const colorHex = departamento.colorInfo?.codigo || '#CCCCCC';
+                    
+                    return (
+                      <div
+                        key={departamento.id || idx}
+                        className="bg-white shadow rounded-lg p-4"
+                      >
+                        <div className="flex flex-col items-center gap-1 mb-2">
+                          <div 
+                            className="w-12 h-12 rounded-full mb-2" 
+                            style={{ backgroundColor: colorHex }}
+                          ></div>
+                          <h4
+                            className="font-semibold text-lg text-fuchsia-700 text-center break-words w-full"
+                            style={{ wordBreak: "break-word" }}
                           >
-                            Eliminar
+                            {departamento.nombre}
+                          </h4>
+                          <p className="text-xs text-gray-500 text-center w-full">
+                            {departamento.colorInfo ? `${departamento.colorInfo.color} (${departamento.colorInfo.codigo})` : 'Sin color'}
+                          </p>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button
+                            onClick={() => handleEditDepartamento(departamento)}
+                            className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
+                          >
+                            Editar
                           </button>
-                        )}
+                          {canDeleteDepartamento && (
+                            <button
+                              onClick={() => handleDeleteDepartamento(departamento.id!)}
+                              className="px-3 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
+                            >
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 {/* Paginación para móviles */}
                 {!loading && !error && filteredDepartamentos.length > 0 && (
@@ -379,7 +421,6 @@ const Departamento: React.FC = () => {
                   nombreDepartamento,
                   colorDepartamento
                 }}
-                handleAutoSave={handleAutoSave}
                 onCreated={handleDepartamentoAdded}
                 editDepartamento={editDepartamento}
                 onClose={() => {
@@ -388,6 +429,7 @@ const Departamento: React.FC = () => {
                 }}
                 hideCloseButton={!isMobile}
                 tableHeight={containerHeight}
+                coloresDisponibles={coloresDisponibles}
               />
             </div>
           )}
