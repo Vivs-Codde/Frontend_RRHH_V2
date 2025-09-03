@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { getAuthHeaders, API_ENDPOINTS } from "../../constants/api";
 import { createDepartamento, updateDepartamento } from "../../services/departamentosService";
 import type { Departamento } from "../../services/departamentosService";
+import { getColores, type Color } from "../../services/coloresService";
 import SuccessModal from "../modals/SuccessModal";
 
 interface WizardDepartamentoProps {
@@ -10,26 +11,26 @@ interface WizardDepartamentoProps {
   setShowWizard: (show: boolean) => void;
   refs: {
     nombreDepartamento: React.RefObject<HTMLInputElement | null>;
-    colorDepartamento: React.RefObject<HTMLInputElement | null>;
+    colorDepartamento: React.RefObject<HTMLSelectElement | null>;
   };
-  handleAutoSave?: () => void;
   onCreated?: () => void;
   editDepartamento?: Departamento | null;
   onClose?: () => void;
   hideCloseButton?: boolean;
   tableHeight?: number;
+  coloresDisponibles?: Color[];
 }
 
 const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
   showWizard,
   setShowWizard,
   refs,
-  handleAutoSave,
   onCreated,
   editDepartamento,
   onClose,
   hideCloseButton = false,
-  tableHeight
+  tableHeight,
+  coloresDisponibles: coloresDisponiblesProp = []
 }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -37,42 +38,54 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
   const [success, setSuccess] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [estado, setEstado] = useState(true);
-  const [colorValue, setColorValue] = useState("#FF5733"); // Estado para el color
+  const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
+  // Usar colores del prop o cargar si no están disponibles
+  const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>(coloresDisponiblesProp);
   const [fieldErrors, setFieldErrors] = useState<{
     nombre?: boolean;
-    color?: boolean;
+    color_id?: boolean;
     nombreDuplicado?: boolean;
   }>({});
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
 
-  // Obtener lista de departamentos al abrir el wizard
+  // Obtener lista de departamentos y colores al abrir el wizard
   useEffect(() => {
-    async function fetchDepartamentos() {
+    async function fetchData() {
       try {
-        const resp = await fetch(API_ENDPOINTS.DEPARTAMENTOS.LIST, {
+        // Obtener departamentos
+        const deptResp = await fetch(API_ENDPOINTS.DEPARTAMENTOS.LIST, {
           headers: getAuthHeaders(),
         });
-        if (resp.ok) {
-          const data = await resp.json();
+        if (deptResp.ok) {
+          const data = await deptResp.json();
           setDepartamentos(Array.isArray(data.data?.data) ? data.data.data : []);
         }
-      } catch {}
+        
+        if (coloresDisponiblesProp.length === 0) {
+          const coloresResp = await getColores({ estado: true });
+          if (coloresResp.success) {
+            setColoresDisponibles(coloresResp.data.data || []);
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      }
     }
-    if (showWizard) fetchDepartamentos();
-  }, [showWizard]);
+    if (showWizard) fetchData();
+  }, [showWizard, coloresDisponiblesProp]);
 
   // Efecto para inicializar los campos si editDepartamento cambia
   useEffect(() => {
     if (showWizard && editDepartamento) {
       if (refs.nombreDepartamento.current) refs.nombreDepartamento.current.value = editDepartamento.nombre || "";
-      if (refs.colorDepartamento.current) refs.colorDepartamento.current.value = editDepartamento.color || "";
-      setColorValue(editDepartamento.color || "#FF5733"); // Actualizar estado del color
+      if (refs.colorDepartamento.current) refs.colorDepartamento.current.value = String(editDepartamento.color_id || "");
+      setSelectedColorId(editDepartamento.color_id || null);
       // Verificar el estado como booleano o como valor 1/0
       setEstado(editDepartamento.estado === true || editDepartamento.estado === 1 as unknown as boolean);
     } else if (showWizard && !editDepartamento) {
       if (refs.nombreDepartamento.current) refs.nombreDepartamento.current.value = "";
-      if (refs.colorDepartamento.current) refs.colorDepartamento.current.value = "#FF5733";
-      setColorValue("#FF5733"); // Resetear estado del color
+      if (refs.colorDepartamento.current) refs.colorDepartamento.current.value = "";
+      setSelectedColorId(null);
       setEstado(true);
     }
     setShowSuccessModal(false);
@@ -87,11 +100,11 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
     setSuccess("");
     setFieldErrors({});
     const nombre = refs.nombreDepartamento.current?.value?.trim() || "";
-    const color = refs.colorDepartamento.current?.value?.trim() || "";
-    let errors: {nombre?: boolean; color?: boolean; nombreDuplicado?: boolean} = {};
+    const colorId = refs.colorDepartamento.current?.value?.trim() || "";
+    let errors: {nombre?: boolean; color_id?: boolean; nombreDuplicado?: boolean} = {};
 
     if (!nombre) errors.nombre = true;
-    if (!color) errors.color = true;
+    if (!colorId) errors.color_id = true;
     
     // Validación de duplicados (solo en modo crear)
     if (!editDepartamento) {
@@ -104,7 +117,7 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
       setFieldErrors(errors);
       
       if (errors.nombre) setError(t('fieldRequired', {field: 'Nombre del departamento'}));
-      else if (errors.color) setError(t('fieldRequired', {field: 'Color del departamento'}));
+      else if (errors.color_id) setError(t('fieldRequired', {field: 'Color del departamento'}));
       else if (errors.nombreDuplicado) setError('El nombre del departamento ya existe');
       return;
     }
@@ -113,7 +126,7 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
     try {
       const data = {
         nombre: refs.nombreDepartamento.current?.value.trim() || "",
-        color: refs.colorDepartamento.current?.value.trim() || "",
+        color_id: parseInt(refs.colorDepartamento.current?.value.trim() || "1"),
         estado: estado,
       };
       
@@ -248,7 +261,7 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
                 htmlFor="nombreDepartamento"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Nombre del Departamento *
+                Nombre *
               </label>
               <input
                 type="text"
@@ -275,42 +288,40 @@ const WizardDepartamento: React.FC<WizardDepartamentoProps> = ({
                 htmlFor="colorDepartamento"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Color del Departamento (Hexadecimal) *
+                Color *
               </label>
               <div className="flex items-center">
-                <input
-                  type="color"
-                  className="h-10 w-10 mr-2 rounded border-0"
-                  value={colorValue}
-                  onChange={(e) => {
-                    const newColor = e.target.value;
-                    setColorValue(newColor);
-                    if (refs.colorDepartamento.current) {
-                      refs.colorDepartamento.current.value = newColor;
-                    }
-                  }}
-                />
-                <input
-                  type="text"
+                {/* Preview del color seleccionado */}
+                {selectedColorId && coloresDisponibles.length > 0 && (
+                  <div 
+                    className="w-10 h-10 mr-2 rounded border"
+                    style={{ 
+                      backgroundColor: coloresDisponibles.find(c => c.id === selectedColorId)?.codigo || '#CCCCCC' 
+                    }}
+                  ></div>
+                )}
+                <select
                   name="colorDepartamento"
                   id="colorDepartamento"
-                  ref={refs.colorDepartamento as React.RefObject<HTMLInputElement>}
+                  ref={refs.colorDepartamento as React.RefObject<HTMLSelectElement>}
                   className={`flex-1 p-2 border ${
-                    fieldErrors.color
+                    fieldErrors.color_id
                       ? "border-red-300 focus:ring-red-500 focus:border-red-500"
                       : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   } rounded-md`}
-                  placeholder="Ej: #FF5733"
-                  value={colorValue}
+                  value={selectedColorId || ""}
                   onChange={(e) => {
-                    const newValue = e.target.value;
-                    setColorValue(newValue);
-                    // Actualizar el valor del color picker cuando cambie el input de texto y sea un hex válido
-                    if (newValue.match(/^#[0-9A-Fa-f]{6}$/)) {
-                      // El color picker se actualizará automáticamente porque ambos usan colorValue
-                    }
+                    const colorId = parseInt(e.target.value);
+                    setSelectedColorId(colorId || null);
                   }}
-                />
+                >
+                  <option value="">Seleccione un color</option>
+                  {coloresDisponibles.map((color) => (
+                    <option key={color.id} value={color.id}>
+                      {color.color}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
